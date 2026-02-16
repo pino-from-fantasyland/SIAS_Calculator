@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIAS 脳卒中機能評価法 Calculator</title>
+    <link rel="stylesheet" href="./dist/output.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+        body { font-family: 'Noto Sans JP', sans-serif; }
+        
+        /* Custom Radio Button Styling */
+        .score-input:checked + label { 
+            background-color: #EFF6FF; /* blue-50 */
+            border-color: #3B82F6; /* blue-500 */
+            color: #1E40AF; /* blue-800 */
+        }
+        .score-input:checked + label .score-badge {
+            background-color: #3B82F6;
+            color: white;
+            border-color: #3B82F6;
+        }
+        
+        /* Manual hint toggle (Others) */
+        .manual-hint-content {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+        .manual-hint-content.show {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Print adjustments */
+        @media print {
+            .no-print { display: none; }
+            body { background: white; }
+            .shadow-lg { box-shadow: none; }
+            .manual-hint-content { display: block !important; }
+            #resultSection { position: relative !important; }
+            #resultContent { display: block !important; max-height: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-slate-800 pb-32">
+
+    <!-- Header -->
+    <header class="bg-slate-800 text-white p-4 sticky top-0 z-40 shadow-md">
+        <div class="max-w-3xl mx-auto flex justify-between items-center">
+            <h1 class="text-lg font-bold">SIAS Calculator (Beta)</h1>
+            <div class="text-sm text-gray-300">非公式学習用</div>
+        </div>
+    </header>
+
+    <main class="max-w-3xl mx-auto p-4 space-y-6">
+
+        <!-- Disclaimer -->
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 text-sm text-yellow-800 rounded">
+            <p><strong>注意：</strong> 本ツールは個人の学習・業務補助を目的とした非公式ツールです。臨床判断は必ず公式の評価用紙および医師・療法士の判断に基づいて行ってください。</p>
+        </div>
+
+        <form id="siasForm">
+            <!-- 1. Motor Function (Upper) -->
+            <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="bg-blue-50 p-3 border-b border-blue-100 flex justify-between items-center">
+                    <h2 class="font-bold text-blue-800">1. 麻痺側運動機能 (上肢)</h2>
+                    <span class="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">0-5点</span>
+                </div>
+                
+                <div class="p-4 space-y-8">
+                    <!-- Knee-Mouth -->
+                    <div class="item-group">
+                        <label class="font-bold block mb-2 text-lg text-gray-800 border-b pb-1">① 膝・口テスト (Knee-Mouth)</label>
+                        <div class="flex flex-col gap-2">
+                            <!-- Option 5 -->
+                            <div>
+                                <input type="radio" name="motor_km" value="5" id="km_5" class="score-input hidden">
+                                <label for="km_5" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">5</span>
+                                    <span class="text-sm font-bold">正常</span>
+                                    <span class="text-xs text-gray-500 ml-2">(健側と同等)</span>
+                                </label>
+                            </div>
+                            <!-- Option 4 -->
+                            <div>
+                                <input type="radio" name="motor_km" value="4" id="km_4" class="score-input hidden">
+                                <label for="km_4" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">4</span>
+                                    <span class="text-sm font-bold">軽度の拙劣さ</span>
+                                </label>
+                            </div>
+                            <!-- Option 3 -->
+                            <div>
+                                <input type="radio" name="motor_km" value="3" id="km_3" class="score-input hidden">
+                                <label for="km_3" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">3</span>
+                                    <div>
+                                        <div class="text-sm font-bold">中等度・著明な拙劣さ</div>
+                                        <div class="text-xs text-gray-500">手は口に届く(肩90°外転可)</div>
+                                    </div>
+                                </label>
+                            </div>
+                            <!-- Option 2 -->
+                            <div>
+                                <input type="radio" name="motor_km" value="2" id="km_2" class="score-input hidden">
+                                <label for="km_2" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">2</span>
+                                    <div>
+                                        <div class="text-sm font-bold">手は口に届かない</div>
+                                        <div class="text-xs text-gray-500">乳頭以上には挙がる(共同運動あり)</div>
+                                    </div>
+                                </label>
+                            </div>
+                            <!-- Option 1 -->
+                            <div>
+                                <input type="radio" name="motor_km" value="1" id="km_1" class="score-input hidden">
+                                <label for="km_1" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">1</span>
+                                    <div>
+                                        <div class="text-sm font-bold">手が乳頭に届かない</div>
+                                        <div class="text-xs text-gray-500">わずかな動きはある</div>
+                                    </div>
+                                </label>
+                            </div>
+                            <!-- Option 0 -->
+                            <div>
+                                <input type="radio" name="motor_km" value="0" id="km_0" class="score-input hidden" required checked>
+                                <label for="km_0" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">0</span>
+                                    <span class="text-sm font-bold">全く動かない</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Finger -->
+                    <div class="item-group">
+                        <label class="font-bold block mb-2 text-lg text-gray-800 border-b pb-1">② 手指テスト (Finger)</label>
+                        <div class="flex flex-col gap-2">
+                            <!-- Option 5 -->
+                            <div>
+                                <input type="radio" name="motor_fin" value="5" id="fin_5" class="score-input hidden">
+                                <label for="fin_5" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">5</span>
+                                    <span class="text-sm font-bold">正常</span>
+                                </label>
+                            </div>
+                            <!-- Option 4 -->
+                            <div>
+                                <input type="radio" name="motor_fin" value="4" id="fin_4" class="score-input hidden">
+                                <label for="fin_4" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">4</span>
+                                    <span class="text-sm font-bold">軽度の拙劣さ</span>
+                                </label>
+                            </div>
+                            <!-- Option 3 -->
+                            <div>
+                                <input type="radio" name="motor_fin" value="3" id="fin_3" class="score-input hidden">
+                                <label for="fin_3" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">3</span>
+                                    <div>
+                                        <div class="text-sm font-bold">中等度・著明な拙劣さ</div>
+                                        <div class="text-xs text-gray-500">全指分離可能、屈伸十分</div>
+                                    </div>
+                                </label>
+                            </div>
+                            <!-- Option 2 -->
+                            <div>
+                                <input type="radio" name="motor_fin" value="2" id="fin_2" class="score-input hidden">
+                                <label for="fin_2" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">2</span>
+                                    <div>
+                                        <div class="text-sm font-bold">分離可能だが不十分</div>
+                                        <div class="text-xs text-gray-500">屈伸が不完全</div>
+                                    </div>
+                                </label>
+                            </div>
+                            <!-- Option 1 -->
+                            <div>
+                                <input type="radio" name="motor_fin" value="1" id="fin_1" class="score-input hidden">
+                                <label for="fin_1" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">1</span>
+                                    <div>
+                                        <div class="text-sm font-bold">集団屈曲/伸展が可能</div>
+                                        <div class="text-xs text-gray-500">または一部の分離運動のみ</div>
+                                    </div>
+                                </label>
+                            </div>
+                            <!-- Option 0 -->
+                            <div>
+                                <input type="radio" name="motor_fin" value="0" id="fin_0" class="score-input hidden" required checked>
+                                <label for="fin_0" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">0</span>
+                                    <span class="text-sm font-bold">全く動かない</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. Motor Function (Lower) -->
+            <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="bg-blue-50 p-3 border-b border-blue-100 flex justify-between items-center">
+                    <h2 class="font-bold text-blue-800">2. 麻痺側運動機能 (下肢)</h2>
+                    <span class="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">0-5点</span>
+                </div>
+                
+                <div class="p-4 space-y-8">
+                    <!-- Hip Flexion -->
+                    <div class="item-group">
+                        <label class="font-bold block mb-2 text-lg text-gray-800 border-b pb-1">③ 股屈曲 (Hip Flex)</label>
+                        <div class="flex flex-col gap-2">
+                             <!-- Option 5 -->
+                             <div>
+                                <input type="radio" name="motor_hip" value="5" id="hip_5" class="score-input hidden">
+                                <label for="hip_5" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">5</span>
+                                    <span class="text-sm font-bold">正常</span>
+                                </label>
+                            </div>
+                             <!-- Option 4 -->
+                             <div>
+                                <input type="radio" name="motor_hip" value="4" id="hip_4" class="score-input hidden">
+                                <label for="hip_4" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">4</span>
+                                    <span class="text-sm font-bold">軽度の拙劣さ</span>
+                                </label>
+                            </div>
+                            <!-- Option 3 -->
+                            <div>
+                                <input type="radio" name="motor_hip" value="3" id="hip_3" class="score-input hidden">
+                                <label for="hip_3" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">3</span>
+                                    <div>
+                                        <div class="text-sm font-bold">中等度・著明な拙劣さ</div>
+                                        <div class="text-xs text-gray-500">90°以上屈曲可</div>
+                                    </div>
+                                </label>
+                            </div>
+                            <!-- Option 2 -->
+                            <div>
+                                <input type="radio" name="motor_hip" value="2" id="hip_2" class="score-input hidden">
+                                <label for="hip_2" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">2</span>
+                                    <div>
+                                        <div class="text-sm font-bold">足が床から離れる</div>
+                                        <div class="text-xs text-gray-500">屈曲角度や回数が不十分</div>
+                                    </div>
+                                </label>
+                            </div>
+                            <!-- Option 1 -->
+                            <div>
+                                <input type="radio" name="motor_hip" value="1" id="hip_1" class="score-input hidden">
+                                <label for="hip_1" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">1</span>
+                                    <div>
+                                        <div class="text-sm font-bold">わずかに動く</div>
+                                        <div class="text-xs text-gray-500">足は床から離れない</div>
+                                    </div>
+                                </label>
+                            </div>
+                            <!-- Option 0 -->
+                            <div>
+                                <input type="radio" name="motor_hip" value="0" id="hip_0" class="score-input hidden" required checked>
+                                <label for="hip_0" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">0</span>
+                                    <span class="text-sm font-bold">全く動かない</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Knee Extension -->
+                    <div class="item-group">
+                        <label class="font-bold block mb-2 text-lg text-gray-800 border-b pb-1">④ 膝伸展 (Knee Ext)</label>
+                        <div class="flex flex-col gap-2">
+                             <!-- Option 5 -->
+                             <div>
+                                <input type="radio" name="motor_kne" value="5" id="kne_5" class="score-input hidden">
+                                <label for="kne_5" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">5</span>
+                                    <span class="text-sm font-bold">正常</span>
+                                </label>
+                            </div>
+                             <!-- Option 4 -->
+                             <div>
+                                <input type="radio" name="motor_kne" value="4" id="kne_4" class="score-input hidden">
+                                <label for="kne_4" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">4</span>
+                                    <span class="text-sm font-bold">軽度の拙劣さ</span>
+                                </label>
+                            </div>
+                            <!-- Option 3 -->
+                            <div>
+                                <input type="radio" name="motor_kne" value="3" id="kne_3" class="score-input hidden">
+                                <label for="kne_3" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">3</span>
+                                    <div>
+                                        <div class="text-sm font-bold">中等度・著明な拙劣さ</div>
+                                        <div class="text-xs text-gray-500">-10°まで伸展可</div>
+                                    </div>
+                                </label>
+                            </div>
+                            <!-- Option 2 -->
+                            <div>
+                                <input type="radio" name="motor_kne" value="2" id="kne_2" class="score-input hidden">
+                                <label for="kne_2" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">2</span>
+                                    <div>
+                                        <div class="text-sm font-bold">足が床から離れる</div>
+                                        <div class="text-xs text-gray-500">不十分な伸展</div>
+                                    </div>
+                                </label>
+                            </div>
+                            <!-- Option 1 -->
+                            <div>
+                                <input type="radio" name="motor_kne" value="1" id="kne_1" class="score-input hidden">
+                                <label for="kne_1" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">1</span>
+                                    <div>
+                                        <div class="text-sm font-bold">わずかに動く</div>
+                                        <div class="text-xs text-gray-500">足は床から離れない</div>
+                                    </div>
+                                </label>
+                            </div>
+                            <!-- Option 0 -->
+                            <div>
+                                <input type="radio" name="motor_kne" value="0" id="kne_0" class="score-input hidden" required checked>
+                                <label for="kne_0" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">0</span>
+                                    <span class="text-sm font-bold">全く動かない</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Foot Pat -->
+                    <div class="item-group">
+                        <label class="font-bold block mb-2 text-lg text-gray-800 border-b pb-1">⑤ 足パット (Foot Pat)</label>
+                        <div class="flex flex-col gap-2">
+                             <!-- Option 5 -->
+                             <div>
+                                <input type="radio" name="motor_ftp" value="5" id="ftp_5" class="score-input hidden">
+                                <label for="ftp_5" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">5</span>
+                                    <span class="text-sm font-bold">正常</span>
+                                </label>
+                            </div>
+                             <!-- Option 4 -->
+                             <div>
+                                <input type="radio" name="motor_ftp" value="4" id="ftp_4" class="score-input hidden">
+                                <label for="ftp_4" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">4</span>
+                                    <span class="text-sm font-bold">軽度の拙劣さ</span>
+                                </label>
+                            </div>
+                            <!-- Option 3 -->
+                            <div>
+                                <input type="radio" name="motor_ftp" value="3" id="ftp_3" class="score-input hidden">
+                                <label for="ftp_3" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">3</span>
+                                    <div>
+                                        <div class="text-sm font-bold">中等度・著明な拙劣さ</div>
+                                        <div class="text-xs text-gray-500">踵接地で背屈可</div>
+                                    </div>
+                                </label>
+                            </div>
+                            <!-- Option 2 -->
+                            <div>
+                                <input type="radio" name="motor_ftp" value="2" id="ftp_2" class="score-input hidden">
+                                <label for="ftp_2" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">2</span>
+                                    <div>
+                                        <div class="text-sm font-bold">足が床から離れる</div>
+                                        <div class="text-xs text-gray-500">背屈は不十分</div>
+                                    </div>
+                                </label>
+                            </div>
+                            <!-- Option 1 -->
+                            <div>
+                                <input type="radio" name="motor_ftp" value="1" id="ftp_1" class="score-input hidden">
+                                <label for="ftp_1" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">1</span>
+                                    <div>
+                                        <div class="text-sm font-bold">前足部は離れない</div>
+                                        <div class="text-xs text-gray-500">わずかな動きはある</div>
+                                    </div>
+                                </label>
+                            </div>
+                            <!-- Option 0 -->
+                            <div>
+                                <input type="radio" name="motor_ftp" value="0" id="ftp_0" class="score-input hidden" required checked>
+                                <label for="ftp_0" class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <span class="score-badge w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-300 font-bold text-lg mr-3 flex-shrink-0">0</span>
+                                    <span class="text-sm font-bold">全く動かない</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+             <!-- 3. Tone / Reflexes - Auto Hint OFF -->
+             <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="bg-gray-50 p-3 border-b border-gray-100 flex justify-between items-center">
+                    <h2 class="font-bold text-gray-800">3. 筋緊張・腱反射 (Tone/Reflex)</h2>
+                    <span class="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">0-3点</span>
+                </div>
+                
+                <div class="p-4 space-y-4">
+                    <p class="text-xs text-gray-500 mb-2">※1A(亢進)・1B(低下)は計算上「1点」として扱われます。</p>
+
+                    <!-- Upper Tone -->
+                    <div class="item-group">
+                        <label class="font-bold text-sm block mb-1">⑥ 上肢筋緊張 (Tone U)</label>
+                        <div class="grid grid-cols-5 gap-1">
+                            <input type="radio" name="tone_upper" value="0" id="tu_0" class="score-input hidden" required checked><label for="tu_0" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">0<br>著明</label>
+                            <input type="radio" name="tone_upper" value="1" id="tu_1" class="score-input hidden"><label for="tu_1" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">1A/B<br>中等</label>
+                            <input type="radio" name="tone_upper" value="2" id="tu_2" class="score-input hidden"><label for="tu_2" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">2<br>軽度</label>
+                            <input type="radio" name="tone_upper" value="3" id="tu_3" class="score-input hidden"><label for="tu_3" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">3<br>正常</label>
+                        </div>
+                    </div>
+
+                    <!-- Lower Tone -->
+                    <div class="item-group">
+                        <label class="font-bold text-sm block mb-1">⑦ 下肢筋緊張 (Tone L)</label>
+                        <div class="grid grid-cols-5 gap-1">
+                            <input type="radio" name="tone_lower" value="0" id="tl_0" class="score-input hidden" required checked><label for="tl_0" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">0<br>著明</label>
+                            <input type="radio" name="tone_lower" value="1" id="tl_1" class="score-input hidden"><label for="tl_1" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">1A/B<br>中等</label>
+                            <input type="radio" name="tone_lower" value="2" id="tl_2" class="score-input hidden"><label for="tl_2" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">2<br>軽度</label>
+                            <input type="radio" name="tone_lower" value="3" id="tl_3" class="score-input hidden"><label for="tl_3" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">3<br>正常</label>
+                        </div>
+                    </div>
+
+                    <!-- Upper Reflex -->
+                    <div class="item-group">
+                        <label class="font-bold text-sm block mb-1">⑧ 上肢腱反射 (Ref U)</label>
+                        <div class="grid grid-cols-5 gap-1">
+                            <input type="radio" name="ref_upper" value="0" id="ru_0" class="score-input hidden" required checked><label for="ru_0" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">0<br>著明</label>
+                            <input type="radio" name="ref_upper" value="1" id="ru_1" class="score-input hidden"><label for="ru_1" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">1A/B<br>中等</label>
+                            <input type="radio" name="ref_upper" value="2" id="ru_2" class="score-input hidden"><label for="ru_2" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">2<br>軽度</label>
+                            <input type="radio" name="ref_upper" value="3" id="ru_3" class="score-input hidden"><label for="ru_3" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">3<br>正常</label>
+                        </div>
+                    </div>
+                     <!-- Lower Reflex -->
+                     <div class="item-group">
+                        <label class="font-bold text-sm block mb-1">⑨ 下肢腱反射 (Ref L)</label>
+                        <div class="grid grid-cols-5 gap-1">
+                            <input type="radio" name="ref_lower" value="0" id="rl_0" class="score-input hidden" required checked><label for="rl_0" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">0<br>著明</label>
+                            <input type="radio" name="ref_lower" value="1" id="rl_1" class="score-input hidden"><label for="rl_1" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">1A/B<br>中等</label>
+                            <input type="radio" name="ref_lower" value="2" id="rl_2" class="score-input hidden"><label for="rl_2" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">2<br>軽度</label>
+                            <input type="radio" name="ref_lower" value="3" id="rl_3" class="score-input hidden"><label for="rl_3" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">3<br>正常</label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+             <!-- 4. Sensory - Auto Hint OFF -->
+             <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="bg-green-50 p-3 border-b border-green-100 flex justify-between items-center">
+                    <h2 class="font-bold text-green-800">4. 感覚機能 (Sensory)</h2>
+                    <span class="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">0-3点</span>
+                </div>
+                <div class="p-4 space-y-4">
+                    <!-- Touch -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="font-bold text-sm block mb-1">⑩ 上肢触覚</label>
+                            <div class="grid grid-cols-4 gap-1">
+                                <input type="radio" name="sens_touch_u" value="0" id="stu_0" class="score-input hidden" required checked><label for="stu_0" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">0<br>脱失</label>
+                                <input type="radio" name="sens_touch_u" value="1" id="stu_1" class="score-input hidden"><label for="stu_1" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">1<br>中/重</label>
+                                <input type="radio" name="sens_touch_u" value="2" id="stu_2" class="score-input hidden"><label for="stu_2" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">2<br>軽/異常</label>
+                                <input type="radio" name="sens_touch_u" value="3" id="stu_3" class="score-input hidden"><label for="stu_3" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">3<br>正常</label>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="font-bold text-sm block mb-1">⑪ 下肢触覚</label>
+                            <div class="grid grid-cols-4 gap-1">
+                                <input type="radio" name="sens_touch_l" value="0" id="stl_0" class="score-input hidden" required checked><label for="stl_0" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">0<br>脱失</label>
+                                <input type="radio" name="sens_touch_l" value="1" id="stl_1" class="score-input hidden"><label for="stl_1" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">1<br>中/重</label>
+                                <input type="radio" name="sens_touch_l" value="2" id="stl_2" class="score-input hidden"><label for="stl_2" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">2<br>軽/異常</label>
+                                <input type="radio" name="sens_touch_l" value="3" id="stl_3" class="score-input hidden"><label for="stl_3" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">3<br>正常</label>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Position -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="font-bold text-sm block mb-1">⑫ 上肢位置覚</label>
+                            <div class="grid grid-cols-4 gap-1">
+                                <input type="radio" name="sens_pos_u" value="0" id="spu_0" class="score-input hidden" required checked><label for="spu_0" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">0<br>運動がわからない</label>
+                                <input type="radio" name="sens_pos_u" value="1" id="spu_1" class="score-input hidden"><label for="spu_1" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">1<br>全可動域の運動ならわかる</label>
+                                <input type="radio" name="sens_pos_u" value="2" id="spu_2" class="score-input hidden"><label for="spu_2" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">2<br>ROMの半分以上の運動がわかる</label>
+                                <input type="radio" name="sens_pos_u" value="3" id="spu_3" class="score-input hidden"><label for="spu_3" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">3<br>ROMの半分以下の運動がわかる</label>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="font-bold text-sm block mb-1">⑬ 下肢位置覚</label>
+                             <div class="grid grid-cols-4 gap-1">
+                                <input type="radio" name="sens_pos_l" value="0" id="spl_0" class="score-input hidden" required checked><label for="spl_0" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">0<br>運動がわからない</label>
+                                <input type="radio" name="sens_pos_l" value="1" id="spl_1" class="score-input hidden"><label for="spl_1" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">1<br>全可動域の運動ならわかる</label>
+                                <input type="radio" name="sens_pos_l" value="2" id="spl_2" class="score-input hidden"><label for="spl_2" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">2<br>ROMの半分以上の運動がわかる</label>
+                                <input type="radio" name="sens_pos_l" value="3" id="spl_3" class="score-input hidden"><label for="spl_3" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">3<br>ROMの半分以下の運動がわかる</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+             <!-- 5. Trunk - Auto Hint OFF -->
+             <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="bg-orange-50 p-3 border-b border-orange-100 flex justify-between items-center">
+                    <h2 class="font-bold text-orange-800">5. 体幹機能 (Trunk)</h2>
+                    
+                </div>
+                <div class="p-4 space-y-4">
+                     <!-- Verticality -->
+                     <div class="item-group">
+                        <label class="font-bold text-sm block mb-1">⑰ 垂直性 (Verticality)</label>
+                        <div class="grid grid-cols-4 gap-1">
+                            <input type="radio" name="trunk_vert" value="0" id="tv_0" class="score-input hidden" required checked><label for="tv_0" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">0<br>座位不可</label>
+                            <input type="radio" name="trunk_vert" value="1" id="tv_1" class="score-input hidden"><label for="tv_1" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">1<br>介助要</label>
+                            <input type="radio" name="trunk_vert" value="2" id="tv_2" class="score-input hidden"><label for="tv_2" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">2<br>修正可</label>
+                            <input type="radio" name="trunk_vert" value="3" id="tv_3" class="score-input hidden"><label for="tv_3" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">3<br>正常</label>
+                        </div>
+                    </div>
+                     <!-- Abdominal -->
+                     <div class="item-group">
+                        <label class="font-bold text-sm block mb-1">⑱ 腹筋 (Abdominal)</label>
+                        <div class="grid grid-cols-4 gap-1">
+                            <input type="radio" name="trunk_abd" value="0" id="ta_0" class="score-input hidden" required checked><label for="ta_0" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">0<br>不能</label>
+                            <input type="radio" name="trunk_abd" value="1" id="ta_1" class="score-input hidden"><label for="ta_1" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">1<br>抵抗なし</label>
+                            <input type="radio" name="trunk_abd" value="2" id="ta_2" class="score-input hidden"><label for="ta_2" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">2<br>軽度の抵抗に耐える</label>
+                            <input type="radio" name="trunk_abd" value="3" id="ta_3" class="score-input hidden"><label for="ta_3" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">3<br>強い抵抗に耐える</label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Other Functions - Auto Hint OFF (Manual button added) -->
+             <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="bg-gray-50 p-3 border-b border-gray-100">
+                    <h2 class="font-bold text-gray-700 flex justify-between items-center">
+                        <span>その他 (ROM, 疼痛, 高次脳, 非麻痺側)</span>
+                        <span class="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">0-3点</span>
+                    </h2>
+                </div>
+                <div id="other-section" class="p-4 space-y-4">
+                    <!-- ROM -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="item-group rounded-lg p-2 hover:bg-gray-50">
+                            <div class="flex justify-between items-end mb-1">
+                                <label class="font-bold text-sm">⑭ 肩関節外転可動域</label>
+                                <button type="button" onclick="toggleHint(this)" class="text-xs text-blue-500 hover:underline">基準 ?</button>
+                            </div>
+                            <div class="manual-hint-content mb-2 text-xs bg-white p-3 rounded border border-gray-200 text-gray-600 shadow-sm">
+                                <ul class="list-disc pl-4"><li>3: 150°以上</li><li>2: 150°以下</li><li>1: 90°以下</li><li>0: 60°以下</li></ul>
+                            </div>
+                            <div class="grid grid-cols-4 gap-1">
+                                <input type="radio" name="rom_upper" value="0" id="rom_u_0" class="score-input hidden" required checked><label for="rom_u_0" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">0<br>60°↓</label>
+                                <input type="radio" name="rom_upper" value="1" id="rom_u_1" class="score-input hidden"><label for="rom_u_1" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">1<br>90°↓</label>
+                                <input type="radio" name="rom_upper" value="2" id="rom_u_2" class="score-input hidden"><label for="rom_u_2" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">2<br>150°↓</label>
+                                <input type="radio" name="rom_upper" value="3" id="rom_u_3" class="score-input hidden"><label for="rom_u_3" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">3<br>150°↑</label>
+                            </div>
+                        </div>
+                        <div class="item-group rounded-lg p-2 hover:bg-gray-50">
+                            <div class="flex justify-between items-end mb-1">
+                                <label class="font-bold text-sm">⑮ 足関節背屈可動域 (膝伸展位)</label>
+                                <button type="button" onclick="toggleHint(this)" class="text-xs text-blue-500 hover:underline">基準 ?</button>
+                            </div>
+                            <div class="manual-hint-content mb-2 text-xs bg-white p-3 rounded border border-gray-200 text-gray-600 shadow-sm">
+                                <ul class="list-disc pl-4"><li>3: 10°以上</li><li>2: 10°以下</li><li>1: 0°以下</li><li>0: -10°以下</li></ul>
+                            </div>
+                            <div class="grid grid-cols-4 gap-1">
+                                <input type="radio" name="rom_lower" value="0" id="rom_l_0" class="score-input hidden" required checked><label for="rom_l_0" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">0<br>-10°↓</label>
+                                <input type="radio" name="rom_lower" value="1" id="rom_l_1" class="score-input hidden"><label for="rom_l_1" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">1<br>0°↓</label>
+                                <input type="radio" name="rom_lower" value="2" id="rom_l_2" class="score-input hidden"><label for="rom_l_2" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">2<br>10°↓</label>
+                                <input type="radio" name="rom_lower" value="3" id="rom_l_3" class="score-input hidden"><label for="rom_l_3" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">3<br>10°↑</label>
+                            </div>
+                        </div>
+                    </div>
+                     <!-- Pain -->
+                     <div class="item-group rounded-lg p-2 hover:bg-gray-50">
+                        <div class="flex justify-between items-end mb-1">
+                            <label class="font-bold text-sm">⑯ 疼痛 (Pain)</label>
+                            <button type="button" onclick="toggleHint(this)" class="text-xs text-blue-500 hover:underline">基準 ?</button>
+                        </div>
+                        <div class="manual-hint-content mb-2 text-xs bg-white p-3 rounded border border-gray-200 text-gray-600 shadow-sm">
+                            <ul class="list-disc pl-4"><li>3: 疼痛なし</li><li>2: 軽度（加療不要）</li><li>1: 中等度</li><li>0: 著明（睡眠妨害）</li></ul>
+                        </div>
+                        <div class="grid grid-cols-4 gap-1">
+                            <input type="radio" name="pain" value="0" id="pain_0" class="score-input hidden" required checked><label for="pain_0" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">0<br>著明</label>
+                            <input type="radio" name="pain" value="1" id="pain_1" class="score-input hidden"><label for="pain_1" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">1<br>中等</label>
+                            <input type="radio" name="pain" value="2" id="pain_2" class="score-input hidden"><label for="pain_2" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">2<br>軽度</label>
+                            <input type="radio" name="pain" value="3" id="pain_3" class="score-input hidden"><label for="pain_3" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">3<br>なし</label>
+                        </div>
+                    </div>
+                    <!-- Higher Cortical -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="item-group rounded-lg p-2 hover:bg-gray-50">
+                            <div class="flex justify-between items-end mb-1">
+                                <label class="font-bold text-sm">⑲ 視空間 (Visuo)</label>
+                                <button type="button" onclick="toggleHint(this)" class="text-xs text-blue-500 hover:underline">基準 ?</button>
+                            </div>
+                            <div class="manual-hint-content mb-2 text-xs bg-white p-3 rounded border border-gray-200 text-gray-600 shadow-sm">
+                                50cm棒の中央指示のズレ<ul class="list-disc pl-4"><li>3: 3cm未満</li><li>2: 3cm以上</li><li>1: 5cm以上</li><li>0: 15cm以上</li></ul>
+                            </div>
+                            <div class="grid grid-cols-4 gap-1">
+                                <input type="radio" name="visuo" value="0" id="vis_0" class="score-input hidden" required checked><label for="vis_0" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">0<br>15cm↑</label>
+                                <input type="radio" name="visuo" value="1" id="vis_1" class="score-input hidden"><label for="vis_1" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">1<br>5cm↑</label>
+                                <input type="radio" name="visuo" value="2" id="vis_2" class="score-input hidden"><label for="vis_2" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">2<br>3cm↑</label>
+                                <input type="radio" name="visuo" value="3" id="vis_3" class="score-input hidden"><label for="vis_3" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">3<br>3cm↓</label>
+                            </div>
+                        </div>
+                        <div class="item-group rounded-lg p-2 hover:bg-gray-50">
+                            <div class="flex justify-between items-end mb-1">
+                                <label class="font-bold text-sm">⑳ 言語 (Speech)</label>
+                                <button type="button" onclick="toggleHint(this)" class="text-xs text-blue-500 hover:underline">基準 ?</button>
+                            </div>
+                            <div class="manual-hint-content mb-2 text-xs bg-white p-3 rounded border border-gray-200 text-gray-600 shadow-sm">
+                                <ul class="list-disc pl-4"><li>3: なし</li><li>2: 軽度失語</li><li>1: 重度運動性/感覚性</li><li>0: 全失語</li></ul>
+                            </div>
+                            <div class="grid grid-cols-4 gap-1">
+                                <input type="radio" name="speech" value="0" id="sp_0" class="score-input hidden" required checked><label for="sp_0" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">0<br>全失語</label>
+                                <input type="radio" name="speech" value="1" id="sp_1" class="score-input hidden"><label for="sp_1" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">1<br>重度</label>
+                                <input type="radio" name="speech" value="2" id="sp_2" class="score-input hidden"><label for="sp_2" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">2<br>軽度</label>
+                                <input type="radio" name="speech" value="3" id="sp_3" class="score-input hidden"><label for="sp_3" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">3<br>なし</label>
+                            </div>
+                        </div>
+                    </div>
+                     <!-- Unaffected Side -->
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-yellow-50 p-2 rounded">
+                        <div class="item-group rounded-lg p-2 hover:bg-yellow-100">
+                            <div class="flex justify-between items-end mb-1">
+                                <label class="font-bold text-sm">㉑ 握力</label>
+                                <button type="button" onclick="toggleHint(this)" class="text-xs text-blue-500 hover:underline">基準 ?</button>
+                            </div>
+                            <div class="manual-hint-content mb-2 text-xs bg-white p-3 rounded border border-gray-200 text-gray-600 shadow-sm">
+                                <ul class="list-disc pl-4"><li>3: 25kg以上</li><li>2: 10-25kg</li><li>1: 10kg以下</li><li>0: 0kg</li></ul>
+                            </div>
+                            <div class="grid grid-cols-4 gap-1">
+                                <input type="radio" name="unaff_grip" value="0" id="grp_0" class="score-input hidden" required checked><label for="grp_0" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">0<br>0kg</label>
+                                <input type="radio" name="unaff_grip" value="1" id="grp_1" class="score-input hidden"><label for="grp_1" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">1<br>10kg↓</label>
+                                <input type="radio" name="unaff_grip" value="2" id="grp_2" class="score-input hidden"><label for="grp_2" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">2<br>10kg↑</label>
+                                <input type="radio" name="unaff_grip" value="3" id="grp_3" class="score-input hidden"><label for="grp_3" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">3<br>25kg↑</label>
+                            </div>
+                        </div>
+                        <div class="item-group rounded-lg p-2 hover:bg-yellow-100">
+                            <div class="flex justify-between items-end mb-1">
+                                <label class="font-bold text-sm">㉒ 健側の大腿四頭筋</label>
+                                <button type="button" onclick="toggleHint(this)" class="text-xs text-blue-500 hover:underline">基準 ?</button>
+                            </div>
+                             <div class="manual-hint-content mb-2 text-xs bg-white p-3 rounded border border-gray-200 text-gray-600 shadow-sm">
+                                <ul class="list-disc pl-4"><li>3: 正常</li><li>2: わずかな低下</li><li>1: 中等度低下</li><li>0: 重力に抗しない</li></ul>
+                            </div>
+                            <div class="grid grid-cols-4 gap-1">
+                                <input type="radio" name="unaff_quad" value="0" id="quad_0" class="score-input hidden" required checked><label for="quad_0" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">0<br>不可</label>
+                                <input type="radio" name="unaff_quad" value="1" id="quad_1" class="score-input hidden"><label for="quad_1" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">1<br>中等</label>
+                                <input type="radio" name="unaff_quad" value="2" id="quad_2" class="score-input hidden"><label for="quad_2" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">2<br>軽度低下</label>
+                                <input type="radio" name="unaff_quad" value="3" id="quad_3" class="score-input hidden"><label for="quad_3" class="border rounded py-2 text-center text-xs cursor-pointer hover:bg-white">3<br>正常</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </form>
+
+  　       <!-- Result Section (Collapsible Mobile Footer) -->
+        <section id="resultSection" class="fixed bottom-0 left-0 w-full bg-white shadow-[0_-5px_15px_rgba(0,0,0,0.1)] z-50 md:relative md:w-full md:shadow-lg md:rounded-xl md:border md:border-gray-200 md:z-0">
+            <!-- Header (Always visible) -->
+            <div class="bg-slate-800 text-white p-3 flex justify-between items-center cursor-pointer md:cursor-auto md:rounded-t-xl" onclick="toggleResultMobile()">
+                <div class="flex items-center gap-3">
+                    <h2 class="font-bold text-base md:text-lg">評価結果</h2>
+                    <!-- Mini Score for Mobile -->
+                    <div class="md:hidden bg-slate-700 px-3 py-1 rounded-full text-sm font-mono">
+                        <span id="miniTotalDisplay">0</span> <span class="text-xs text-slate-400">/76</span>
+                    </div>
+                </div>
+                <div class="md:hidden text-gray-300 text-sm flex items-center gap-1">
+                    <span id="toggleText">詳細</span>
+                    <span id="mobileToggleIcon">▲</span>
+                </div>
+            </div>
+            
+            <!-- Content (Collapsible on Mobile) -->
+            <div id="resultContent" class="hidden md:block p-4 space-y-4 max-h-[70vh] overflow-y-auto md:max-h-none md:overflow-visible bg-white">
+                <!-- Scores -->
+                <div class="flex justify-around items-center text-center">
+                    <div>
+                        <div class="text-xs text-gray-500">Total Score</div>
+                        <div class="text-3xl font-bold text-blue-600"><span id="totalScore">0</span><span class="text-sm text-gray-400">/76</span></div>
+                    </div>
+                    <div>
+                         <div class="text-xs text-gray-500">下肢合計</div>
+                         <div class="text-xl font-bold text-gray-700"><span id="lowerScore">0</span><span class="text-sm text-gray-400">/15</span></div>
+                    </div>
+                     <div>
+                        <div class="text-xs text-gray-500">体幹合計</div>
+                        <div class="text-xl font-bold text-gray-700"><span id="trunkScore">0</span><span class="text-sm text-gray-400">/6</span></div>
+                   </div>
+                </div>
+
+                <!-- Prognostic Indicators -->
+                <div class="bg-gray-100 rounded p-3 text-sm">
+                    <h3 class="font-bold text-gray-700 mb-2 border-b border-gray-300 pb-1">
+                        予後予測インジケーター (岡林ら, 2014)
+                    </h3>
+                    <div id="indicator-total" class="flex items-center gap-2 mb-1">
+                        <span class="w-3 h-3 rounded-full bg-gray-300 flex-shrink-0"></span>
+                        <span>総点 (目標: 59点以上) → 歩行自立の可能性高</span>
+                    </div>
+                    <div id="indicator-lower" class="flex items-center gap-2 mb-1">
+                        <span class="w-3 h-3 rounded-full bg-gray-300 flex-shrink-0"></span>
+                        <span>下肢運動 (目標: 9点以上) → 歩行自立の可能性高</span>
+                    </div>
+                    <div id="indicator-trunk" class="flex items-center gap-2 mb-1">
+                        <span class="w-3 h-3 rounded-full bg-gray-300 flex-shrink-0"></span>
+                        <span>体幹機能 (目標: 3点以上) → ADL自立のカットオフ</span>
+                    </div>
+                    <div id="indicator-sensory" class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-gray-300 flex-shrink-0"></span>
+                        <span>感覚機能 (目標: 9点以上) → 歩行自立の可能性高</span>
+                    </div>
+                </div>
+
+                <!-- Chart -->
+                <div class="relative h-64 w-full">
+                    <canvas id="siasChart"></canvas>
+                </div>
+                <!-- Action Buttons -->
+                 <div class="flex gap-2 no-print">
+                    <button onclick="window.print()" class="flex-1 bg-gray-200 text-gray-700 py-2 rounded text-sm font-bold hover:bg-gray-300">印刷 / PDF保存</button>
+                    <!-- Note: Image saving requires more complex canvas handling in some browsers, but Print to PDF is reliable -->
+                 </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // --- Logic ---
+        const form = document.getElementById('siasForm');
+        let chartInstance = null;
+
+        // Initial Calculation
+        calculateSIAS();
+
+        // Listen for changes
+        form.addEventListener('change', calculateSIAS);
+
+        // --- Helper Functions ---
+        // Toggle Manual Hints
+        function toggleHint(btn) {
+            const container = btn.closest('.item-group');
+            const hint = container.querySelector('.manual-hint-content');
+            if(hint) {
+                hint.classList.toggle('show');
+            }
+        }
+
+        // Toggle Mobile Result Drawer
+        function toggleResultMobile() {
+            // Only active on mobile viewports
+            if (window.innerWidth >= 768) return;
+
+            const content = document.getElementById('resultContent');
+            const icon = document.getElementById('mobileToggleIcon');
+            const text = document.getElementById('toggleText');
+            
+            if (content.classList.contains('hidden')) {
+                // Open
+                content.classList.remove('hidden');
+                icon.innerText = '▼';
+                text.innerText = '閉じる';
+            } else {
+                // Close
+                content.classList.add('hidden');
+                icon.innerText = '▲';
+                text.innerText = '詳細';
+            }
+        }
+
+        function getVal(name) {
+            const el = document.querySelector(`input[name="${name}"]:checked`) || document.querySelector(`select[name="${name}"]`);
+            return el ? parseInt(el.value, 10) : 0;
+        }
+
+        function calculateSIAS() {
+            // Get Values
+            const motor_km = getVal('motor_km');
+            const motor_fin = getVal('motor_fin');
+            const motor_hip = getVal('motor_hip');
+            const motor_kne = getVal('motor_kne');
+            const motor_ftp = getVal('motor_ftp');
+            
+            const tone_u = getVal('tone_upper');
+            const tone_l = getVal('tone_lower');
+            const ref_u = getVal('ref_upper');
+            const ref_l = getVal('ref_lower');
+
+            const sens_t_u = getVal('sens_touch_u');
+            const sens_t_l = getVal('sens_touch_l');
+            const sens_p_u = getVal('sens_pos_u');
+            const sens_p_l = getVal('sens_pos_l');
+
+            const rom_u = getVal('rom_upper');
+            const rom_l = getVal('rom_lower');
+            const pain = getVal('pain');
+
+            const trunk_v = getVal('trunk_vert');
+            const trunk_a = getVal('trunk_abd');
+
+            const visuo = getVal('visuo');
+            const speech = getVal('speech');
+            const grip = getVal('unaff_grip');
+            const quad = getVal('unaff_quad');
+
+            // --- Aggregations ---
+            // Motor Score (0-5 scale items)
+            const score_motor_u = motor_km + motor_fin; 
+            const score_motor_l = motor_hip + motor_kne + motor_ftp;
+            
+            // Trunk
+            const score_trunk = trunk_v + trunk_a;
+
+            // Sensory
+            const score_sensory = sens_t_u + sens_t_l + sens_p_u + sens_p_l;
+
+            // Total Score
+            const total = motor_km + motor_fin + motor_hip + motor_kne + motor_ftp +
+                          tone_u + tone_l + ref_u + ref_l +
+                          sens_t_u + sens_t_l + sens_p_u + sens_p_l +
+                          rom_u + rom_l + pain +
+                          trunk_v + trunk_a +
+                          visuo + speech + grip + quad;
+
+            // Update Text Displays
+            document.getElementById('totalScore').innerText = total;
+            document.getElementById('miniTotalDisplay').innerText = total; // Update mobile mini score
+            document.getElementById('lowerScore').innerText = score_motor_l;
+            document.getElementById('trunkScore').innerText = score_trunk;
+
+            // Update Indicators (Based on Okabayashi et al., 2014)
+            updateIndicator('indicator-total', total >= 59);
+            updateIndicator('indicator-lower', score_motor_l >= 9);
+            updateIndicator('indicator-trunk', score_trunk >= 3);
+            updateIndicator('indicator-sensory', score_sensory >= 9);
+
+            // Prepare Data for Chart with Normalization
+            const scale = (val, max) => (val / max) * 5;
+
+            const rawData = [
+                motor_km, motor_fin,
+                motor_hip, motor_kne, motor_ftp,
+                tone_u, tone_l,
+                sens_t_u, sens_p_u,
+                sens_t_l, sens_p_l,
+                trunk_v, trunk_a,
+                visuo, speech
+            ];
+
+            const scaledData = [
+                motor_km, // Max 5
+                motor_fin, // Max 5
+                motor_hip, // Max 5
+                motor_kne, // Max 5
+                motor_ftp, // Max 5
+                scale(tone_u, 3), // Max 3 -> 5
+                scale(tone_l, 3), // Max 3 -> 5
+                scale(sens_t_u, 3), // Max 3 -> 5
+                scale(sens_p_u, 3), // Max 3 -> 5
+                scale(sens_t_l, 3), // Max 3 -> 5
+                scale(sens_p_l, 3), // Max 3 -> 5
+                scale(trunk_v, 3), // Max 3 -> 5
+                scale(trunk_a, 3), // Max 3 -> 5
+                scale(visuo, 3), // Max 3 -> 5
+                scale(speech, 3) // Max 3 -> 5
+            ];
+
+            // Update Chart
+            updateChart(scaledData, rawData);
+        }
+
+        function updateIndicator(id, isPass) {
+            const el = document.getElementById(id).querySelector('span:first-child');
+            if(isPass) {
+                el.className = "w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]";
+            } else {
+                el.className = "w-3 h-3 rounded-full bg-red-400";
+            }
+        }
+
+        function updateChart(scaledData, rawData) {
+            const ctx = document.getElementById('siasChart').getContext('2d');
+            
+            // Data Structure for Radar
+            const labels = [
+                'Knee-Mouth', 'Finger', 
+                'Hip Flex', 'Knee Ext', 'Foot Pat',
+                'Tone U', 'Tone L', 
+                'Touch U', 'Pos U',
+                'Touch L', 'Pos L',
+                'Verticality', 'Abdominal',
+                'Visuo', 'Speech'
+            ];
+
+            const dataset = {
+                label: 'SIAS Score',
+                data: scaledData,
+                fill: true,
+                backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                borderColor: 'rgb(59, 130, 246)',
+                pointBackgroundColor: 'rgb(59, 130, 246)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgb(59, 130, 246)'
+            };
+
+            if (chartInstance) {
+                chartInstance.data.datasets[0].data = scaledData;
+                chartInstance.data.datasets[0].rawData = rawData; // Update custom raw data
+                chartInstance.update();
+            } else {
+                chartInstance = new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            ...dataset,
+                            rawData: rawData // Store raw data for tooltip
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        elements: {
+                            line: { borderWidth: 3 }
+                        },
+                        scales: {
+                            r: {
+                                angleLines: { display: true },
+                                min: 0,
+                                max: 5,
+                                ticks: { 
+                                    stepSize: 1, 
+                                    backdropColor: 'transparent',
+                                    display: false // Hide ticks to avoid confusion with scaled values
+                                },
+                                pointLabels: {
+                                    font: { size: 10 }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        // Retrieve raw value for display
+                                        const raw = context.dataset.rawData[context.dataIndex];
+                                        return `${context.label}: ${raw}点`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>
